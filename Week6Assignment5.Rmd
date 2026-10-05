@@ -1,0 +1,187 @@
+---
+title: "BIO 620 Week 6 - Assignment 5"
+author: "Chris Olson"
+date: "2026-10-05"
+output: word_document
+---
+
+## Model Selection Analysis
+
+The purpose of this analysis was to investigate the relative importance of Inhibitor, Cell Line, VHL status, and Concentration of Inhibitor on Percent Survival. I compared an intercept-only model with a series of models containing different combinations of the four predictors. I began with simple univariate and additive models and then increased model complexity. I also included a model containing an interaction between Inhibitor and Concentration.
+
+```{r setup, message=FALSE, warning=FALSE}
+library(AICcmodavg)
+
+cell <- read.csv(
+  "Datasets/Cell_Inhibition_Schoenfeld.csv",
+  check.names = FALSE
+)
+
+cell$Inhibitor <- as.factor(cell$Inhibitor)
+cell$`Cell Line` <- as.factor(cell$`Cell Line`)
+cell$VHL <- as.factor(cell$VHL)
+```
+
+## Linear Models
+
+```{r models}
+m0 <- lm(PercentSurvival ~ 1, data = cell)
+
+m1 <- lm(PercentSurvival ~ Inhibitor, data = cell)
+
+m2 <- lm(PercentSurvival ~ `Cell Line`, data = cell)
+
+m3 <- lm(PercentSurvival ~ VHL, data = cell)
+
+m4 <- lm(PercentSurvival ~ `Concentration uM`, data = cell)
+
+m5 <- lm(
+  PercentSurvival ~ Inhibitor + `Cell Line`,
+  data = cell
+)
+
+m6 <- lm(
+  PercentSurvival ~ Inhibitor + VHL,
+  data = cell
+)
+
+m7 <- lm(
+  PercentSurvival ~ Inhibitor + `Concentration uM`,
+  data = cell
+)
+
+m8 <- lm(
+  PercentSurvival ~ `Cell Line` + VHL,
+  data = cell
+)
+
+m9 <- lm(
+  PercentSurvival ~ `Cell Line` + `Concentration uM`,
+  data = cell
+)
+
+m10 <- lm(
+  PercentSurvival ~ VHL + `Concentration uM`,
+  data = cell
+)
+
+m11 <- lm(
+  PercentSurvival ~ Inhibitor + `Cell Line` + VHL,
+  data = cell
+)
+
+m12 <- lm(
+  PercentSurvival ~ Inhibitor + `Cell Line` + `Concentration uM`,
+  data = cell
+)
+
+m13 <- lm(
+  PercentSurvival ~ Inhibitor + VHL + `Concentration uM`,
+  data = cell
+)
+
+m14 <- lm(
+  PercentSurvival ~ `Cell Line` + VHL + `Concentration uM`,
+  data = cell
+)
+
+m15 <- lm(
+  PercentSurvival ~ Inhibitor + `Cell Line` + VHL + `Concentration uM`,
+  data = cell
+)
+
+m16 <- lm(
+  PercentSurvival ~ Inhibitor * `Concentration uM` + `Cell Line` + VHL,
+  data = cell
+)
+```
+
+## AICc Model Comparison
+
+```{r aicc}
+models <- list(
+  m0, m1, m2, m3, m4, m5, m6, m7, m8,
+  m9, m10, m11, m12, m13, m14, m15, m16
+)
+
+model_names <- c(
+  "Intercept",
+  "Inhibitor",
+  "Cell Line",
+  "VHL",
+  "Concentration",
+  "Inhibitor + Cell Line",
+  "Inhibitor + VHL",
+  "Inhibitor + Concentration",
+  "Cell Line + VHL",
+  "Cell Line + Concentration",
+  "VHL + Concentration",
+  "Inhibitor + Cell Line + VHL",
+  "Inhibitor + Cell Line + Concentration",
+  "Inhibitor + VHL + Concentration",
+  "Cell Line + VHL + Concentration",
+  "Full Additive Model",
+  "Inhibitor x Concentration"
+)
+
+aicc_values <- sapply(models, AICc)
+
+results <- data.frame(
+  Model = model_names,
+  AICc = aicc_values
+)
+
+results$Delta_AICc <- results$AICc - min(results$AICc)
+
+results <- results[order(results$AICc), ]
+
+results
+```
+
+## Model Selection Results
+
+The model with the lowest AICc was the full additive model containing Inhibitor, Cell Line, VHL status, and Concentration of Inhibitor. The model had an AICc of 3896.300 and therefore a delta AICc of 0.
+
+The next-best model included an interaction between Inhibitor and Concentration. It had an AICc of 3898.366 and a delta AICc of 2.066. This model therefore had some support, but the full additive model was still the highest-ranked model.
+
+Models that excluded Concentration generally performed substantially worse. For example, the model containing Inhibitor, Cell Line, and VHL but not Concentration had a delta AICc greater than 237. This suggests that inhibitor concentration is especially important for explaining variation in Percent Survival.
+
+## Best Model
+
+```{r best-model}
+best_model_number <- which.min(aicc_values)
+
+best_model <- models[[best_model_number]]
+
+model_names[best_model_number]
+
+summary(best_model)
+```
+
+The full additive model was statistically significant overall. The model had an R-squared value of 0.4867 and an adjusted R-squared value of 0.4813, indicating that approximately 49% of the variation in Percent Survival was explained by the four predictors.
+
+All four predictors were statistically significant in the best model.
+
+GNE-140 was associated with an estimated 24.33-unit increase in Percent Survival relative to the reference inhibitor and was highly significant (p = 5.81 × 10^-7).
+
+RCC10 was associated with an estimated 11.92-unit decrease in Percent Survival relative to the reference cell line (p = 0.0132).
+
+VHL+ was associated with an estimated 9.38-unit increase in Percent Survival relative to the reference VHL category (p = 0.0168).
+
+Concentration of Inhibitor had a coefficient of -4.70 and was highly significant (p < 2 × 10^-16). This indicates that Percent Survival decreased by approximately 4.70 units for each one-unit increase in inhibitor concentration while holding the other variables constant.
+
+## ANOVA
+
+```{r anova}
+anova(best_model)
+```
+
+The ANOVA results showed significant effects of Inhibitor, Cell Line, VHL status, and Concentration of Inhibitor. Concentration had the largest sum of squares and the largest F statistic, indicating that it explained substantially more variation in Percent Survival than the other predictors.
+
+## Interpretation
+
+The results indicate that Percent Survival is influenced by all four variables examined in this analysis. However, inhibitor concentration appears to be the strongest predictor. As concentration increased, Percent Survival decreased substantially.
+
+Inhibitor identity, Cell Line, and VHL status also contributed significantly to differences in survival. The full additive model received the greatest support according to AICc, suggesting that all four predictors provide useful information for explaining variation in Percent Survival.
+
+The interaction model between Inhibitor and Concentration had a delta AICc of approximately 2.07, indicating that it also received some support. However, adding the interaction did not improve AICc enough to outperform the simpler full additive model. Therefore, the full additive model was selected as the best-supported model.
