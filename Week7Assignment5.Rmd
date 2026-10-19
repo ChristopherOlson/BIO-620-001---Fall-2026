@@ -1,0 +1,119 @@
+---
+title: "Bio 620 Week 7 Assignments"
+author: "Chris Olson"
+output: word_document
+---
+
+# Assignment 2
+
+```{r}
+species <- read.csv("Datasets/species.csv")
+
+species$pH <- as.factor(species$pH)
+
+species.full <- glm(Species ~ pH + Biomass,
+                    family = poisson(link = "log"),
+                    data = species)
+
+summary(species.full)
+
+species.pH <- glm(Species ~ pH,
+                  family = poisson(link = "log"),
+                  data = species)
+
+species.biomass <- glm(Species ~ Biomass,
+                       family = poisson(link = "log"),
+                       data = species)
+
+species.null <- glm(Species ~ 1,
+                    family = poisson(link = "log"),
+                    data = species)
+
+AIC(species.full,
+    species.pH,
+    species.biomass,
+    species.null)
+
+anova(species.full, test = "Chisq")
+
+species.best <- step(species.full)
+
+summary(species.best)
+```
+
+# Assignment 3
+
+```{r}
+bolger <- read.csv("Datasets/bolger.csv")
+
+bolger.full <- glm(RODENTSP ~ PERSHRUB + DISTX + AGE,
+                   family = binomial(link = "logit"),
+                   data = bolger)
+
+summary(bolger.full)
+
+bolger.shrub <- glm(RODENTSP ~ PERSHRUB,
+                    family = binomial(link = "logit"),
+                    data = bolger)
+
+bolger.distance <- glm(RODENTSP ~ DISTX,
+                       family = binomial(link = "logit"),
+                       data = bolger)
+
+bolger.age <- glm(RODENTSP ~ AGE,
+                  family = binomial(link = "logit"),
+                  data = bolger)
+
+bolger.null <- glm(RODENTSP ~ 1,
+                   family = binomial(link = "logit"),
+                   data = bolger)
+
+AIC(bolger.full,
+    bolger.shrub,
+    bolger.distance,
+    bolger.age,
+    bolger.null)
+
+anova(bolger.full, test = "Chisq")
+
+bolger.best <- step(bolger.full)
+
+summary(bolger.best)
+```
+
+# Assignment 4
+
+```{r}
+molerat <- read.csv("Datasets/molerat.csv")
+
+molerat$caste <- as.factor(molerat$caste)
+
+molerat.full <- glm(lnenergy ~ lnmass + caste,
+                    family = Gamma(link = "log"),
+                    data = molerat)
+
+summary(molerat.full)
+
+molerat.mass <- glm(lnenergy ~ lnmass,
+                    family = Gamma(link = "log"),
+                    data = molerat)
+
+molerat.caste <- glm(lnenergy ~ caste,
+                     family = Gamma(link = "log"),
+                     data = molerat)
+
+molerat.null <- glm(lnenergy ~ 1,
+                    family = Gamma(link = "log"),
+                    data = molerat)
+
+AIC(molerat.full,
+    molerat.mass,
+    molerat.caste,
+    molerat.null)
+
+anova(molerat.full, test = "F")
+
+molerat.best <- step(molerat.full)
+
+summary(molerat.best)
+```
